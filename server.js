@@ -8,7 +8,9 @@ app.set('view engine', 'jsx');
 app.engine('jsx', reactViews.createEngine());
 
 app.get('/pokemon', (req,res)=>{
-    res.render('Index')
+    res.render('Index',{
+        pokemon: pokemon,
+    })
 })
 app.listen(port, () => {
   console.log("listening on port", port);

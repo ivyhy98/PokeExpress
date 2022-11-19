@@ -1,38 +1,67 @@
+require("dotenv").config();
 const express = require("express");
 const reactViews = require("express-react-views");
 const app = express();
 const port = 3000;
+const Pokemon = require("./models/pokemon");
+const mongoose = require("mongoose");
 
-const pokemon = require('./models/pokemon');
-app.set('view engine', 'jsx');
-app.engine('jsx', reactViews.createEngine());
-
-app.use((req,res,next)=>{
-    next();
+//connect to database
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
 });
 
-app.use(express.urlencoded({extended: false}));
+mongoose.connection.once("open", () => {
+  console.log("connected to db");
+});
 
-app.get('/pokemon', (req,res)=>{
-    res.render('Index',{
-        pokemon: pokemon,
+//setup view engine
+app.set("view engine", "jsx");
+app.engine("jsx", reactViews.createEngine());
+//setup middleware
+app.use((req, res, next) => {
+  next();
+});
+app.use(express.urlencoded({ extended: false }));
+
+//setup routes
+app.get("/pokemon", (req, res) => {
+    Pokemon.find({},(error, allPokemon)=>{
+        if(!error) {
+            res.status(200).render('Index',{
+                pokemon: allPokemon,
+            });
+        }else {
+            res.status(400).send(error);
+        }
     });
 });
-app.get('/pokemon/new', (req, res) => {
-  res.render('New');
+app.get("/pokemon/new", (req, res) => {
+  res.render("New");
 });
-
-app.get('/pokemon/:id',(req,res)=>{
-    res.render('Show',{
-        pokemon: pokemon[req.params.id],
+app.get("/pokemon/:id", (req, res) => {
+    Pokemon.findById(req.params.id,(error, pokemonById)=>{
+        if(!error){
+            res.status(200).render('Show',{
+                pokemon: pokemonById,
+            });
+        } else {
+            res.status(400).send(error);
+        }
     });
 });
 
-
-
-app.post('/pokemon',(req,res)=>{
-    pokemon.push(req.body);
-    res.redirect('/pokemon')
+//post routes
+app.post("/pokemon", (req, res) => {
+  Pokemon.create(req.body,(error, createdPokemon)=>{
+    if(!error){
+        res.status(200).redirect('/pokemon')
+        //res.status(200).send(createdPokemon)
+    } else{
+        res.status(400).send(error);
+    }
+  })
 });
 
 app.listen(port, () => {
